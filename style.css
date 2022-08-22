@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,700&display=swap');
+body {
+    padding: 0;
+    margin: 0;
+    font-family: "Roboto", sans-serif;
+}
+.card-container {
+    display: flex;
+}
+.sidebar {
+    background-color: white;
+    box-shadow: 2px 2px 2px #E6EDF7; ;
+    width: 13.125%;
+    height: 100%;
+    padding-left: 4.75%;
+    padding-right: 4.75%;
+}
+.main-bar {
+    background-color: rgba(247, 247, 250, 0.5);
+    width: 86.875%;
+    height: 100%;
+    padding-left: 8.4%;
+    padding-right: 23.5%;
+}
+.task-details {
+    border: 1px solid #E8EFF6;
+    box-shadow: 2px 2px 2px #E6EDF7;
+    border-radius: 4px;
+}
+.task-details-name #task-name {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.task-details-dueDate {
+    color:red;
+}
+
+.task-details-description {
+    font-size: 14px;
+    font-weight: 400;
+}
+.task-name-done {
+    color:grey;
+    text-decoration:line-through;
+}
