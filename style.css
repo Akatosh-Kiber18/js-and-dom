@@ -1,46 +1,136 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,700&display=swap');
+
 body {
     padding: 0;
     margin: 0;
     font-family: "Roboto", sans-serif;
 }
+
+h3 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+h4 {
+    color: #878787;
+    font-weight: 400;
+    font-size: 14px;
+}
+
 .card-container {
     display: flex;
 }
+
+.tasks {
+    margin-bottom: 100px;
+}
+
+.tasks label {
+    font-weight: 700;
+    font-size: 14px;
+    color: #262837;
+}
+
+.tasks p {
+    font-weight: 400;
+    font-size: 12px;
+    color: #262837;;
+}
+
 .sidebar {
     background-color: white;
-    box-shadow: 2px 2px 2px #E6EDF7; ;
+    box-shadow: 2px 2px 2px #E6EDF7;;
     width: 13.125%;
-    height: 100%;
     padding-left: 4.75%;
     padding-right: 4.75%;
 }
+
+.sidebar p {
+    font-weight: 700;
+    font-size: 14px;
+    color: #CECFEF;
+}
+
 .main-bar {
-    background-color: rgba(247, 247, 250, 0.5);
     width: 86.875%;
     height: 100%;
     padding-left: 8.4%;
     padding-right: 23.5%;
 }
+
+.hide-show-task{
+    padding-top: 15px;
+}
+
+.list-name {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .task-details {
     border: 1px solid #E8EFF6;
     box-shadow: 2px 2px 2px #E6EDF7;
     border-radius: 4px;
+    margin-top: 20px;
 }
+
+.task-details-strip-grey {
+    width: 100%;
+    height: 4px;
+    background-color: #D9D9D9;
+    border-radius: 4px 4px 0 0;
+}
+
+.task-details-strip-red {
+    width: 100%;
+    height: 4px;
+    background-color: #E63241;
+    border-radius: 4px 4px 0 0;
+}
+
+.task-details-strip-green {
+    width: 100%;
+    height: 4px;
+    background-color: #58AC83;
+    border-radius: 4px 4px 0 0;
+}
+
 .task-details-name #task-name {
     font-size: 16px;
     font-weight: 700;
 }
 
 .task-details-dueDate {
-    color:red;
+    color: red;
 }
 
 .task-details-description {
     font-size: 14px;
     font-weight: 400;
 }
-.task-name-done {
-    color:grey;
-    text-decoration:line-through;
+
+.task-details-done {
+    color: grey;
+    text-decoration: line-through;
+}
+
+.checkbox {
+    accent-color: green;
+}
+
+.done {
+    display: none;
+}
+
+.delete-button {
+    display: flex;
+    flex-direction: row-reverse;
+    padding-right: 10px;
+    padding-bottom: 10px;
+}
+form {
+    display: flex;
+    align-items: flex-end;
+    flex-direction: column;
 }

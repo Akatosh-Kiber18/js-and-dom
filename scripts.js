@@ -1,10 +1,11 @@
-const state = [
+let state = [
     {
         id: 1,
         name: "Go outside",
         done: false,
         description: "Description for task with name: Go Outside",
         dueDate: "2022-08-24",
+        deleted: false
     },
     {
         id: 2,
@@ -12,6 +13,7 @@ const state = [
         done: false,
         description: "Description for task with name: Buy some fruits",
         dueDate: "2022-08-23",
+        deleted: false
     },
     {
         id: 3,
@@ -19,22 +21,39 @@ const state = [
         done: true,
         description: "Description for task with name: Describe an array of tasks in JavaScript",
         dueDate: "2022-08-22",
+        deleted: false
     },
     {
         id: 4,
         name: "Go on event",
         done: false,
         description: "Description for task with name: Go on event",
-        dueDate: "2022-08-25",
+        dueDate: null,
+        deleted: false
     },
     {
         id: 5,
         name: "overdue task",
         done: false,
         description: null,
-        dueDate:"2022-08-21",
-    }
+        dueDate: "2022-08-21",
+        deleted: false
+    },
 ]
+
+const inc = (init = 5) => () => ++init
+const genTaskId = inc();
+
+const createTask = (name, description, date) => {
+    return {
+        id: genTaskId(),
+        name: name,
+        done: false,
+        description: description,
+        dueDate: date,
+        deleted: false
+    }
+}
 
 const taskListEl = document.getElementById("tasks")
 const currentDate = new Date();
@@ -42,60 +61,116 @@ currentDate.setHours(0);
 currentDate.setMinutes(0);
 currentDate.setSeconds(0);
 
+const hide = document.getElementById("hide-task");
+hide.onclick = () => updatePage(state);
+
 function onDoneClick(taskId) {
     const t = state.find(t => t.id === taskId)
     t.done = !t.done;
-    update(state);
+    updatePage(state);
 }
 
-function update(state) {
-    taskListEl.innerHTML = '';
-    state.forEach(task => taskListEl.appendChild(createTaskBlock(task)))
+function onDeleteBtnClick(taskId) {
+    const id = `task-${taskId}`;
+    document.getElementById(id).outerHTML = "";
+    const t = state.find(t => t.id === taskId);
+    t.deleted = true;
+    updatePage(state);
 }
+
+function updatePage(state) {
+    taskListEl.innerHTML = '';
+    state.forEach(task => taskListEl.append(createTaskBlock(task)))
+}
+
+updatePage(state);
 
 function createTaskBlock(task) {
-    const taskDate = new Date(task.dueDate);
+    if (!task.deleted) {
+        const taskDetailsEl = document.createElement("div");
+        taskDetailsEl.id = `task-${task.id}`
 
-    const taskDetailsEl = document.createElement("div")
-    taskDetailsEl.className = "task-details";
+        let taskDueDateEl = document.createElement("h4");
+        taskDetailsEl.append(updateTaskDueDateEl(taskDueDateEl, task.dueDate))
 
-    let taskDueDateEl = document.createElement("h4");
-    taskDueDateEl.className = taskDate.getTime() < currentDate.getTime() ? "task-details-dueDate": "";
-    taskDueDateEl.innerText = task.dueDate;
-    taskDetailsEl.appendChild(taskDueDateEl)
+        let doneCheckboxEl = document.createElement("input");
+        taskDetailsEl.append(updateTaskDoneCheckboxEl(doneCheckboxEl, task.done, task.id));
 
-    let doneCheckboxEl = document.createElement("input");
-    doneCheckboxEl.type = "checkbox";
-    doneCheckboxEl.onclick = () => onDoneClick(task.id);
-    doneCheckboxEl.checked = task.done;
-    taskDetailsEl.appendChild(doneCheckboxEl);
+        let taskNameEl = document.createElement("label");
+        taskDetailsEl.append(updateTaskNameEl(taskNameEl, task.name, task.done));
 
-    let taskNameEl = document.createElement("label");
-    taskNameEl.innerText = task.name;
-    taskNameEl.className = task.done ? "task-name-done": "";
-    taskDetailsEl.appendChild(taskNameEl);
+        let taskDescriptionEl = document.createElement("p");
+        taskDetailsEl.append(updateTaskDescriptionEl(taskDescriptionEl, task.description));
 
-    let taskDescriptionEl = document.createElement("p");
-    taskDescriptionEl.innerText = task.description;
-    taskDetailsEl.appendChild(taskDescriptionEl);
+        let deleteBtnEl = document.createElement("button");
+        taskDetailsEl.append(updateDeleteBtnEl(deleteBtnEl, task.id));
 
-    return taskDetailsEl;
+        let taskStripEl = document.createElement("div");
+        taskDetailsEl.prepend(updateTaskStripEl(taskStripEl, taskDueDateEl, task.done, task.dueDate));
+
+        taskDetailsEl.className = hide.checked && task.done ? "done" : "task-details";
+
+        return taskDetailsEl;
+    }
+    return ""
 }
-update(state);
 
-//     const checked = task.done ? "checked" : "";
-//     const taskNameStyle = checked ? "color:grey;text-decoration:line-through;" : "";
-//     const dueDateStyle = taskDate.getTime() < date.getTime() ? "color:red;" : "";
-//     const description = task.description || ""
-//
-//
-//     return `
-//             <div class="task-details" style="">
-//                 <h4 class="task-details-dueDate" style="${dueDateStyle}" >${task.dueDate}</h4>
-//                 <input type="checkbox" class="task-details-name" name="checkbox" onclick="onDoneClick(${task.id})" ${checked}>
-//                 <label for="checkbox" id="task-name" style=${taskNameStyle}>${task.name}</label>
-//                 <p class="task-details-description">${description}</p>
-//             </div>
-// `
+function updateTaskDueDateEl(taskDueDateEl, dueDate) {
+    const taskDate = new Date(dueDate).getTime();
 
+    if (dueDate !== null) {
+        taskDueDateEl.className = taskDate < currentDate.getTime() ? "task-details-dueDate" : "";
+    }
+    taskDueDateEl.innerText = dueDate ? dueDate : "[no dueDate]";
+
+    return taskDueDateEl;
+}
+
+function updateTaskDoneCheckboxEl(doneCheckboxEl, done, id) {
+    doneCheckboxEl.type = "checkbox";
+    doneCheckboxEl.className = done ? "checkbox" : "";
+    doneCheckboxEl.onclick = () => onDoneClick(id);
+    doneCheckboxEl.checked = done;
+
+    return doneCheckboxEl;
+}
+
+function updateTaskNameEl(taskNameEl, name, done) {
+    taskNameEl.innerText = name;
+    taskNameEl.className = done ? "task-details-done" : "";
+
+    return taskNameEl;
+}
+
+function updateTaskDescriptionEl(taskDescriptionEl, description) {
+    taskDescriptionEl.innerText = description ? description : "[no description]";
+
+    return taskDescriptionEl;
+}
+
+function updateTaskStripEl(taskStripEl, taskDueDateEl, done, dueDate) {
+    const taskDate = new Date(dueDate).getTime() || null;
+
+    if (done) {
+        taskStripEl.className = "task-details-strip-green";
+        taskDueDateEl.className = "";
+    } else if (taskDate !== null && taskDate < currentDate.getTime() && !done) {
+        taskDueDateEl.className = "task-details-dueDate";
+        taskStripEl.className = "task-details-strip-red";
+    } else {
+        taskStripEl.className = "task-details-strip-grey";
+    }
+
+    return taskStripEl;
+}
+
+function updateDeleteBtnEl(deleteBtnEl, id) {
+    deleteBtnEl.innerText = "Delete";
+    deleteBtnEl.onclick = () => onDeleteBtnClick(id);
+    const span = document.createElement("span");
+    span.className = "delete-button";
+    span.append(deleteBtnEl);
+
+    return span;
+}
 

@@ -24,16 +24,39 @@
                 card description
             </p>
         </div>
-        <h2 class="list-name">
-            List
-        </h2>
+        <div class="list-name">
+            <h2>
+                List
+            </h2>
+            <div>
+
+                <form name="task">
+                    <label for="create-task-name">Task name</label>
+                    <input type="text" name="task name" id="create-task-name" placeholder="Task name" required>
+                    <label for="description">Description</label>
+                    <input type="text" name="description" id="description" placeholder="Description">
+                    <label for="dueDate">Due date</label>
+                    <input type="date" name="dueDate" id="dueDate">
+                    <button type="button">Add</button>
+                </form>
+
+                <div class="hide-show-task">
+                    <input type="checkbox" class="hide-task" id="hide-task" name="hide-checkbox" value="yes">
+                    <label for="hide-task" id="hide-show">Hide completed tasks</label>
+                </div>
+
+            </div>
+        </div>
         <div class="tasks" id="tasks">
+
             <div class="task-details">
+                <div class="task-details-strip-grey"></div>
                 <h4 class="task-details-dueDate">2022-09-09</h4>
                 <input type="checkbox" class="task-details-name" name="checkbox" id="checkbox" value="yes">
                 <label for="checkbox" id="task-name">Task name</label>
                 <p class="task-details-description">Description for task</p>
             </div>
+
         </div>
     </div>
 </div>
