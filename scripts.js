@@ -173,4 +173,3 @@ function updateDeleteBtnEl(deleteBtnEl, id) {
 
     return span;
 }
-
