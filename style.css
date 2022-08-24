@@ -129,8 +129,23 @@ h4 {
     padding-right: 10px;
     padding-bottom: 10px;
 }
-form {
+.create-task {
     display: flex;
     align-items: flex-end;
     flex-direction: column;
+}
+
+input {
+    margin-bottom: 10px;
+}
+
+.task-name-label {
+    display: none;
+}
+
+.require {
+    border-color: red;
+    color: red;
+    margin: 0;
+    display: block;
 }

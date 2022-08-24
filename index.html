@@ -30,14 +30,12 @@
             </h2>
             <div>
 
-                <form name="task">
-                    <label for="create-task-name">Task name</label>
-                    <input type="text" name="task name" id="create-task-name" placeholder="Task name" required>
-                    <label for="description">Description</label>
-                    <input type="text" name="description" id="description" placeholder="Description">
-                    <label for="dueDate">Due date</label>
-                    <input type="date" name="dueDate" id="dueDate">
-                    <button type="button">Add</button>
+                <form class="create-task">
+                    <input type="text" name="task name" id="create-task-name" placeholder="Task name">
+                    <label class="task-name-label" for="create-task-name">Enter task name</label>
+                    <input type="text" name="description" id="create-description" placeholder="Description">
+                    <input type="date" name="dueDate" id="create-dueDate">
+                    <button id="add-task-btn" type="submit">Add</button>
                 </form>
 
                 <div class="hide-show-task">

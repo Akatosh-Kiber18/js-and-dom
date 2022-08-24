@@ -4,7 +4,7 @@ let state = [
         name: "Go outside",
         done: false,
         description: "Description for task with name: Go Outside",
-        dueDate: "2022-08-24",
+        dueDate: "2022-08-26",
         deleted: false
     },
     {
@@ -12,7 +12,7 @@ let state = [
         name: "Buy some fruits",
         done: false,
         description: "Description for task with name: Buy some fruits",
-        dueDate: "2022-08-23",
+        dueDate: "2022-08-26",
         deleted: false
     },
     {
@@ -20,7 +20,7 @@ let state = [
         name: "Describe an array of tasks in JavaScript ",
         done: true,
         description: "Description for task with name: Describe an array of tasks in JavaScript",
-        dueDate: "2022-08-22",
+        dueDate: "2022-08-26",
         deleted: false
     },
     {
@@ -44,18 +44,52 @@ let state = [
 const inc = (init = 5) => () => ++init
 const genTaskId = inc();
 
-const createTask = (name, description, date) => {
+const createTask = (name, description, dueDate) => {
     return {
         id: genTaskId(),
         name: name,
         done: false,
         description: description,
-        dueDate: date,
+        dueDate: dueDate,
         deleted: false
     }
 }
 
+const addTaskBtnEl = document.getElementById("add-task-btn");
+
+const taskNameEl = document.getElementById("create-task-name");
+const taskLNameLabelEl = document.getElementsByClassName("task-name-label")[0];
+
+const taskDescriptionEl = document.getElementById("create-description");
+
+const taskDueDateEl = document.getElementById("create-dueDate");
+
+
+addTaskBtnEl.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (taskNameEl.value) {
+        const task = createTask(taskNameEl.value, taskDescriptionEl.value, taskDueDateEl.value);
+        state.push(task);
+        console.log(task);
+        taskNameEl.value = "";
+        taskDescriptionEl.value = "";
+        taskDueDateEl.value = "";
+
+        taskNameEl.className = "";
+        taskLNameLabelEl.className = "task-name-label"
+
+        updatePage(state);
+
+    }
+    else {
+        taskNameEl.className= "require";
+        taskLNameLabelEl.className = "require"
+    }
+})
+
+
 const taskListEl = document.getElementById("tasks")
+
 const currentDate = new Date();
 currentDate.setHours(0);
 currentDate.setMinutes(0);
@@ -67,7 +101,11 @@ hide.onclick = () => updatePage(state);
 function onDoneClick(taskId) {
     const t = state.find(t => t.id === taskId)
     t.done = !t.done;
-    updatePage(state);
+
+    const oldTask = document.getElementById(`task-${taskId}`);
+    const newTask = createTaskBlock(t);
+
+    taskListEl.replaceChild(newTask, oldTask);
 }
 
 function onDeleteBtnClick(taskId) {
