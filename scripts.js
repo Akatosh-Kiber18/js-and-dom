@@ -1,56 +1,43 @@
-let state = [
-    {
-        id: 1,
-        name: "Go outside",
-        done: false,
-        description: "Description for task with name: Go Outside",
-        dueDate: "2022-08-26",
-        deleted: false
-    },
-    {
-        id: 2,
-        name: "Buy some fruits",
-        done: false,
-        description: "Description for task with name: Buy some fruits",
-        dueDate: "2022-08-26",
-        deleted: false
-    },
-    {
-        id: 3,
-        name: "Describe an array of tasks in JavaScript ",
-        done: true,
-        description: "Description for task with name: Describe an array of tasks in JavaScript",
-        dueDate: "2022-08-26",
-        deleted: false
-    },
-    {
-        id: 4,
-        name: "Go on event",
-        done: false,
-        description: "Description for task with name: Go on event",
-        dueDate: null,
-        deleted: false
-    },
-    {
-        id: 5,
-        name: "overdue task",
-        done: false,
-        description: null,
-        dueDate: "2022-08-21",
-        deleted: false
-    },
-]
+let state = []
 
-const inc = (init = 5) => () => ++init
-const genTaskId = inc();
+function getTasksFromDb() {
+    state = []
+    return fetch('http://localhost:3000/tasks')
+        .then(result => result.json())
+        .then(tasks => {
+            state = tasks;
+            updatePage(state);
+        });
+}
+
+getTasksFromDb().then();
+
+function addTasksToDb(task) {
+    return fetch('http://localhost:3000/tasks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(task)
+    })
+}
+
+function updateTaskInDb(id, task) {
+    return fetch(`http://localhost:3000/tasks/`+id, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json;charset=utf-8',
+        },
+        body: JSON.stringify(task)
+    });
+}
 
 const createTask = (name, description, dueDate) => {
     return {
-        id: genTaskId(),
         name: name,
         done: false,
-        description: description,
-        dueDate: dueDate,
+        description: description || null,
+        dueDate: dueDate || null,
         deleted: false
     }
 }
@@ -69,8 +56,7 @@ addTaskBtnEl.addEventListener('click', (e) => {
     e.preventDefault();
     if (taskNameEl.value) {
         const task = createTask(taskNameEl.value, taskDescriptionEl.value, taskDueDateEl.value);
-        state.push(task);
-        console.log(task);
+
         taskNameEl.value = "";
         taskDescriptionEl.value = "";
         taskDueDateEl.value = "";
@@ -78,11 +64,11 @@ addTaskBtnEl.addEventListener('click', (e) => {
         taskNameEl.className = "";
         taskLNameLabelEl.className = "task-name-label"
 
-        updatePage(state);
-
-    }
-    else {
-        taskNameEl.className= "require";
+        addTasksToDb(task)
+            .then(_ => getTasksFromDb())
+            .then(_ => updatePage(state))
+    } else {
+        taskNameEl.className = "require";
         taskLNameLabelEl.className = "require"
     }
 })
@@ -102,10 +88,14 @@ function onDoneClick(taskId) {
     const t = state.find(t => t.id === taskId)
     t.done = !t.done;
 
-    const oldTask = document.getElementById(`task-${taskId}`);
-    const newTask = createTaskBlock(t);
+    updateTaskInDb(taskId, t).then(_ => {
+        const oldTask = document.getElementById(`task-${taskId}`);
+        const newTask = createTaskBlock(t);
 
-    taskListEl.replaceChild(newTask, oldTask);
+        taskListEl.replaceChild(newTask, oldTask);
+    } )
+
+
 }
 
 function onDeleteBtnClick(taskId) {
@@ -113,15 +103,15 @@ function onDeleteBtnClick(taskId) {
     document.getElementById(id).outerHTML = "";
     const t = state.find(t => t.id === taskId);
     t.deleted = true;
-    updatePage(state);
+
+    updateTaskInDb(taskId,t)
+        .then(_ => updatePage(state))
 }
 
 function updatePage(state) {
     taskListEl.innerHTML = '';
     state.forEach(task => taskListEl.append(createTaskBlock(task)))
 }
-
-updatePage(state);
 
 function createTaskBlock(task) {
     if (!task.deleted) {
