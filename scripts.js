@@ -1,16 +1,17 @@
 let state = []
 
-function getTasksFromDb() {
-    state = []
+function loadTasksFromDb() {
+    showSpinner(true);
     return fetch('http://localhost:3000/tasks')
         .then(result => result.json())
         .then(tasks => {
             state = tasks;
             updatePage(state);
+            showSpinner(false);
         });
 }
 
-getTasksFromDb().then();
+loadTasksFromDb();
 
 function addTasksToDb(task) {
     return fetch('http://localhost:3000/tasks', {
@@ -22,8 +23,8 @@ function addTasksToDb(task) {
     })
 }
 
-function updateTaskInDb(id, task) {
-    return fetch(`http://localhost:3000/tasks/`+id, {
+function updateTaskInDb(task) {
+    return fetch(`http://localhost:3000/tasks/` + task.id, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -32,13 +33,21 @@ function updateTaskInDb(id, task) {
     });
 }
 
+function deleteTaskInDb(taskId) {
+    return fetch(`http://localhost:3000/tasks/` + taskId, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json;charset=utf-8',
+        }
+    })
+}
+
 const createTask = (name, description, dueDate) => {
     return {
         name: name,
         done: false,
         description: description || null,
         dueDate: dueDate || null,
-        deleted: false
     }
 }
 
@@ -54,25 +63,32 @@ const taskDueDateEl = document.getElementById("create-dueDate");
 
 addTaskBtnEl.addEventListener('click', (e) => {
     e.preventDefault();
-    if (taskNameEl.value) {
-        const task = createTask(taskNameEl.value, taskDescriptionEl.value, taskDueDateEl.value);
-
-        taskNameEl.value = "";
-        taskDescriptionEl.value = "";
-        taskDueDateEl.value = "";
-
-        taskNameEl.className = "";
-        taskLNameLabelEl.className = "task-name-label"
-
-        addTasksToDb(task)
-            .then(_ => getTasksFromDb())
-            .then(_ => updatePage(state))
-    } else {
+    if (!taskNameEl.value) {
         taskNameEl.className = "require";
         taskLNameLabelEl.className = "require"
+        return
     }
-})
+    const task = createTask(taskNameEl.value, taskDescriptionEl.value, taskDueDateEl.value);
 
+
+    taskNameEl.className = "";
+    taskLNameLabelEl.className = "task-name-label"
+    allowCreateTaskFormEdition(e.target.parentElement, false);
+    showSpinner(true);
+    addTasksToDb(task)
+        .then(_ => loadTasksFromDb())
+        .then(_ => {
+            taskNameEl.value = "";
+            taskDescriptionEl.value = "";
+            taskDueDateEl.value = "";
+
+            allowCreateTaskFormEdition(e.target.parentElement, true);
+            showSpinner(false);
+        }, _ => {
+            allowCreateTaskFormEdition(e.target.parentElement, true)
+            showSpinner(false)
+        });
+})
 
 const taskListEl = document.getElementById("tasks")
 
@@ -87,30 +103,35 @@ hide.onclick = () => updatePage(state);
 function onDoneClick(taskId) {
     const t = state.find(t => t.id === taskId)
     t.done = !t.done;
+    showSpinner(true);
+    updateTaskInDb(t)
+        .then(_ => {
+            const oldTask = document.getElementById(`task-${taskId}`);
+            const newTask = createTaskBlock(t);
 
-    updateTaskInDb(taskId, t).then(_ => {
-        const oldTask = document.getElementById(`task-${taskId}`);
-        const newTask = createTaskBlock(t);
-
-        taskListEl.replaceChild(newTask, oldTask);
-    } )
-
-
+            taskListEl.replaceChild(newTask, oldTask);
+            showSpinner(false);
+        })
 }
 
 function onDeleteBtnClick(taskId) {
-    const id = `task-${taskId}`;
-    document.getElementById(id).outerHTML = "";
-    const t = state.find(t => t.id === taskId);
-    t.deleted = true;
-
-    updateTaskInDb(taskId,t)
-        .then(_ => updatePage(state))
+    showSpinner(true);
+    deleteTaskInDb(taskId)
+        .then(_ => loadTasksFromDb(),
+            _ => {
+            const task = document.getElementById(`task-${taskId}`);
+            task.style.borderColor = "purple";
+            Array.from(task.getElementsByTagName("button"))[0].disabled = false;
+        })
 }
 
 function updatePage(state) {
-    taskListEl.innerHTML = '';
-    state.forEach(task => taskListEl.append(createTaskBlock(task)))
+    if (state.length === 0) {
+        taskListEl.innerHTML = 'no tasks';
+    } else {
+        taskListEl.innerHTML = '';
+        state.forEach(task => taskListEl.append(createTaskBlock(task)))
+    }
 }
 
 function createTaskBlock(task) {
@@ -149,7 +170,7 @@ function updateTaskDueDateEl(taskDueDateEl, dueDate) {
     if (dueDate !== null) {
         taskDueDateEl.className = taskDate < currentDate.getTime() ? "task-details-dueDate" : "";
     }
-    taskDueDateEl.innerText = dueDate ? dueDate : "[no dueDate]";
+    taskDueDateEl.innerText = dueDate ? new Date(dueDate).toLocaleDateString() : "[no dueDate]";
 
     return taskDueDateEl;
 }
@@ -157,7 +178,10 @@ function updateTaskDueDateEl(taskDueDateEl, dueDate) {
 function updateTaskDoneCheckboxEl(doneCheckboxEl, done, id) {
     doneCheckboxEl.type = "checkbox";
     doneCheckboxEl.className = done ? "checkbox" : "";
-    doneCheckboxEl.onclick = () => onDoneClick(id);
+    doneCheckboxEl.onclick = () => {
+        doneCheckboxEl.disabled = true
+        onDoneClick(id)
+    };
     doneCheckboxEl.checked = done;
 
     return doneCheckboxEl;
@@ -194,10 +218,29 @@ function updateTaskStripEl(taskStripEl, taskDueDateEl, done, dueDate) {
 
 function updateDeleteBtnEl(deleteBtnEl, id) {
     deleteBtnEl.innerText = "Delete";
-    deleteBtnEl.onclick = () => onDeleteBtnClick(id);
+    deleteBtnEl.onclick = () => {
+        deleteBtnEl.disabled = true;
+        onDeleteBtnClick(id);
+    }
     const span = document.createElement("span");
     span.className = "delete-button";
     span.append(deleteBtnEl);
 
     return span;
+}
+
+function allowCreateTaskFormEdition(formEl, allowed) {
+    Array.from(formEl.children).forEach(child => child.disabled = !allowed);
+}
+
+function showSpinner(status) {
+    const spinner = document.getElementById('loader');
+    const tasks = document.getElementById('tasks');
+    if (!status) {
+        spinner.style.display = "none";
+        tasks.style.filter = "none";
+    } else {
+        spinner.style.display = "block";
+        tasks.style.filter = "blur(3px)";
+    }
 }
