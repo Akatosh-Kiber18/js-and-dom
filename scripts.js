@@ -1,167 +1,261 @@
-let state = []
+import {addTasks, deleteTask, updateTask} from "./fetchApi/tasks.js";
+import {addLists, deleteLists, getLists} from "./fetchApi/lists.js";
 
-function loadTasksFromDb() {
-    showSpinner(true);
-    return fetch('http://localhost:3000/tasks')
-        .then(result => result.json())
-        .then(tasks => {
-            state = tasks;
-            updatePage(state);
-            showSpinner(false);
+let state = {
+    showCompletedTasks: false,
+    lists: []
+};
+
+const showEl = document.getElementById('hide-task');
+showEl.onclick = () => {
+    state.showCompletedTasks = showEl.checked;
+    updatePage(state);
+}
+
+getLists()
+    .then(lists => {
+        state.lists = lists
+        updatePage(state)
+    });
+
+const listNameEl = document.getElementById('create-list');
+const listNameLabelEl = document.getElementById('create-list-label');
+const createListBtnEl = document.getElementById('create-list-btn');
+createListBtnEl.onclick = () => {
+    if (!listNameEl.value) {
+        listNameLabelEl.className = 'require';
+        listNameLabelEl.style.display = 'flex'
+        listNameEl.className = 'require';
+        return
+    }
+    addLists({name: listNameEl.value})
+        .then(getLists())
+        .then(lists => {
+            state.lists = lists
+            updatePage(state)
         });
 }
 
-loadTasksFromDb();
+function createListBlock(list) {
+    const listBlockEl = document.createElement('div');
+    listBlockEl.className = "list-name";
+    listBlockEl.id = `list-${list.id}`
+    const listNameEl = document.createElement('h2');
+    listNameEl.innerText = list.name;
+    listBlockEl.append(listNameEl)
 
-function addTasksToDb(task) {
-    return fetch('http://localhost:3000/tasks', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(task)
-    })
+    const listMenuContainerEl = document.createElement('div');
+    listMenuContainerEl.id = 'menu-container';
+
+    const listMenuBtnEl = document.createElement('button');
+    listMenuBtnEl.id = `list-menu-button-${list.id}`;
+    listMenuBtnEl.type = "button";
+    listMenuBtnEl.innerText = "Show menu";
+    listMenuBtnEl.onclick = (event) => {
+        const listId = event.target.parentElement.parentElement.id.split('-')[1];
+        onListMenuBtnClick(listId)
+    }
+
+    listMenuContainerEl.append(listMenuBtnEl);
+    listMenuContainerEl.append(updateListMenuEl(list.id))
+    listBlockEl.append(listMenuContainerEl);
+
+    list.tasks.forEach(t => listBlockEl.append(createTaskBlock(t)));
+
+    return listBlockEl;
 }
 
-function updateTaskInDb(task) {
-    return fetch(`http://localhost:3000/tasks/` + task.id, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8',
-        },
-        body: JSON.stringify(task)
-    });
+function onListMenuBtnClick(listId) {
+    const formContainerEl = document.getElementById(`list-menu-${listId}`);
+    const btnEl = document.getElementById(`list-menu-button-${listId}`);
+    if (formContainerEl.style.display === "none") {
+        formContainerEl.style.display = "block";
+        btnEl.innerText = "Hide menu";
+    } else {
+        formContainerEl.style.display = "none";
+        btnEl.innerText = "Show menu";
+    }
 }
 
-function deleteTaskInDb(taskId) {
-    return fetch(`http://localhost:3000/tasks/` + taskId, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8',
-        }
-    })
+function updateListMenuEl(listId) {
+    const listMenu = document.createElement('div');
+    listMenu.id = `list-menu-${listId}`;
+    listMenu.style.display = "none";
+    listMenu.innerText = 'Add new task';
+
+    const formEl = document.createElement('form');
+
+    const nameInputEl = document.createElement('input');
+    nameInputEl.type = "text";
+    nameInputEl.id = `create-task-name-${listId}`;
+    nameInputEl.placeholder = "Task name";
+
+    const nameLabelEl = document.createElement('label')
+    nameLabelEl.className = 'task-name-label';
+    nameLabelEl.innerText = '*';
+    nameLabelEl.id = `task-name-label-${listId}`;
+
+    const descriptionInputEl = document.createElement('input');
+    descriptionInputEl.type = "text";
+    descriptionInputEl.id = `create-description-${listId}`;
+    descriptionInputEl.placeholder = "Description";
+
+    const dueDateInputEl = document.createElement('input');
+    dueDateInputEl.type = "date";
+    dueDateInputEl.id = `create-dueDate-${listId}`;
+
+    const addTaskBtnEl = document.createElement('button');
+    addTaskBtnEl.type = "button";
+    addTaskBtnEl.id = `add-task-btn-${listId}`;
+    addTaskBtnEl.innerText = "Add";
+    addTaskBtnEl.onclick = () => {
+        onAddTaskBtnClick(listId)
+    }
+
+    const deleteListBtnEl = document.createElement('button');
+    deleteListBtnEl.type = "button";
+    deleteListBtnEl.id = `delete-list-btn-${listId}`;
+    deleteListBtnEl.innerText = "Delete list";
+    deleteListBtnEl.style.color = "red"
+    deleteListBtnEl.onclick = () => {
+        onDeleteListBtnClick(listId)
+    }
+
+    formEl.append(nameInputEl);
+    formEl.append(nameLabelEl);
+    formEl.append(descriptionInputEl);
+    formEl.append(dueDateInputEl);
+    formEl.append(addTaskBtnEl);
+    formEl.append(deleteListBtnEl);
+
+    listMenu.append(formEl);
+
+    return listMenu;
 }
 
-const createTask = (name, description, dueDate) => {
+function createTask(name, description, dueDate, listId) {
     return {
         name: name,
         done: false,
         description: description || null,
+        listId: listId || 5,
         dueDate: dueDate || null,
     }
 }
 
-const addTaskBtnEl = document.getElementById("add-task-btn");
+const mainBar = document.getElementById('main-bar');
 
-const taskNameEl = document.getElementById("create-task-name");
-const taskLNameLabelEl = document.getElementsByClassName("task-name-label")[0];
+function updatePage(state) {
+    mainBar.innerHTML = "";
+    state.lists.forEach(l => mainBar.prepend(createListBlock(l)))
+}
 
-const taskDescriptionEl = document.getElementById("create-description");
+function onDeleteListBtnClick(listId) {
+    deleteLists(listId)
+        .then(_ => getLists())
+        .then(lists => {
+            state.lists = lists
+            updatePage(state)
+        });
+}
 
-const taskDueDateEl = document.getElementById("create-dueDate");
+function onAddTaskBtnClick(listId) {
+    const formContainerEl = document.getElementById(`list-menu-${listId}`);
+    const formEl = formContainerEl.getElementsByTagName('form')[0];
 
+    const taskNameEl = document.getElementById(`create-task-name-${listId}`);
+    const taskNameLabelEl = document.getElementById(`task-name-label-${listId}`)
+    const taskDescriptionEl = document.getElementById(`create-description-${listId}`);
+    const taskDueDateEl = document.getElementById(`create-dueDate-${listId}`);
 
-addTaskBtnEl.addEventListener('click', (e) => {
-    e.preventDefault();
     if (!taskNameEl.value) {
         taskNameEl.className = "require";
-        taskLNameLabelEl.className = "require"
+        taskNameLabelEl.className = "require";
         return
     }
-    const task = createTask(taskNameEl.value, taskDescriptionEl.value, taskDueDateEl.value);
 
+    const task = createTask(taskNameEl.value, taskDescriptionEl.value, taskDueDateEl.value, listId);
 
     taskNameEl.className = "";
-    taskLNameLabelEl.className = "task-name-label"
-    allowCreateTaskFormEdition(e.target.parentElement, false);
-    showSpinner(true);
-    addTasksToDb(task)
-        .then(_ => loadTasksFromDb())
+    taskNameLabelEl.className = "task-name-label";
+
+    allowCreateTaskFormEdition(formEl, false);
+    addTasks(task)
+        .then(_ => getLists())
+        .then(lists => {
+            state.lists = lists
+            updatePage(state)
+        })
         .then(_ => {
             taskNameEl.value = "";
             taskDescriptionEl.value = "";
             taskDueDateEl.value = "";
 
-            allowCreateTaskFormEdition(e.target.parentElement, true);
-            showSpinner(false);
+            allowCreateTaskFormEdition(formEl, true);
         }, _ => {
-            allowCreateTaskFormEdition(e.target.parentElement, true)
-            showSpinner(false)
+            allowCreateTaskFormEdition(formEl, true)
         });
-})
-
-const taskListEl = document.getElementById("tasks")
+}
 
 const currentDate = new Date();
 currentDate.setHours(0);
 currentDate.setMinutes(0);
 currentDate.setSeconds(0);
 
-const hide = document.getElementById("hide-task");
-hide.onclick = () => updatePage(state);
+function onDoneClick(taskId, listId) {
+    let list = state.lists.find(l => l.id === listId);
+    let task = list.tasks.find(t => t.id === taskId);
+    task.done = !task.done;
 
-function onDoneClick(taskId) {
-    const t = state.find(t => t.id === taskId)
-    t.done = !t.done;
-    showSpinner(true);
-    updateTaskInDb(t)
+    updateTask(task)
         .then(_ => {
+            const taskListEl = document.getElementById(`list-${listId}`);
             const oldTask = document.getElementById(`task-${taskId}`);
-            const newTask = createTaskBlock(t);
+            const newTask = createTaskBlock(task);
 
             taskListEl.replaceChild(newTask, oldTask);
-            showSpinner(false);
         })
 }
 
 function onDeleteBtnClick(taskId) {
-    showSpinner(true);
-    deleteTaskInDb(taskId)
-        .then(_ => loadTasksFromDb(),
-            _ => {
+    deleteTask(taskId)
+        .then(_ => getLists(), _ => {
             const task = document.getElementById(`task-${taskId}`);
             task.style.borderColor = "purple";
             Array.from(task.getElementsByTagName("button"))[0].disabled = false;
         })
-}
-
-function updatePage(state) {
-    if (state.length === 0) {
-        taskListEl.innerHTML = 'no tasks';
-    } else {
-        taskListEl.innerHTML = '';
-        state.forEach(task => taskListEl.append(createTaskBlock(task)))
-    }
+        .then(lists => {
+            state.lists = lists
+            updatePage(state)
+        });
 }
 
 function createTaskBlock(task) {
-    if (!task.deleted) {
-        const taskDetailsEl = document.createElement("div");
-        taskDetailsEl.id = `task-${task.id}`
 
-        let taskDueDateEl = document.createElement("h4");
-        taskDetailsEl.append(updateTaskDueDateEl(taskDueDateEl, task.dueDate))
+    const taskDetailsEl = document.createElement("div");
+    taskDetailsEl.id = `task-${task.id}`
 
-        let doneCheckboxEl = document.createElement("input");
-        taskDetailsEl.append(updateTaskDoneCheckboxEl(doneCheckboxEl, task.done, task.id));
+    let taskDueDateEl = document.createElement("h4");
+    taskDetailsEl.append(updateTaskDueDateEl(taskDueDateEl, task.dueDate))
 
-        let taskNameEl = document.createElement("label");
-        taskDetailsEl.append(updateTaskNameEl(taskNameEl, task.name, task.done));
+    let doneCheckboxEl = document.createElement("input");
+    taskDetailsEl.append(updateTaskDoneCheckboxEl(doneCheckboxEl, task.done, task.id));
 
-        let taskDescriptionEl = document.createElement("p");
-        taskDetailsEl.append(updateTaskDescriptionEl(taskDescriptionEl, task.description));
+    let taskNameEl = document.createElement("label");
+    taskDetailsEl.append(updateTaskNameEl(taskNameEl, task.name, task.done));
 
-        let deleteBtnEl = document.createElement("button");
-        taskDetailsEl.append(updateDeleteBtnEl(deleteBtnEl, task.id));
+    let taskDescriptionEl = document.createElement("p");
+    taskDetailsEl.append(updateTaskDescriptionEl(taskDescriptionEl, task.description));
 
-        let taskStripEl = document.createElement("div");
-        taskDetailsEl.prepend(updateTaskStripEl(taskStripEl, taskDueDateEl, task.done, task.dueDate));
+    let deleteBtnEl = document.createElement("button");
+    taskDetailsEl.append(updateDeleteBtnEl(deleteBtnEl, task.id));
 
-        taskDetailsEl.className = hide.checked && task.done ? "done" : "task-details";
+    let taskStripEl = document.createElement("div");
+    taskDetailsEl.prepend(updateTaskStripEl(taskStripEl, taskDueDateEl, task.done, task.dueDate));
 
-        return taskDetailsEl;
-    }
-    return ""
+    taskDetailsEl.className = !state.showCompletedTasks && task.done ? "done" : "task-details";
+
+    return taskDetailsEl;
 }
 
 function updateTaskDueDateEl(taskDueDateEl, dueDate) {
@@ -178,9 +272,10 @@ function updateTaskDueDateEl(taskDueDateEl, dueDate) {
 function updateTaskDoneCheckboxEl(doneCheckboxEl, done, id) {
     doneCheckboxEl.type = "checkbox";
     doneCheckboxEl.className = done ? "checkbox" : "";
-    doneCheckboxEl.onclick = () => {
+    doneCheckboxEl.onclick = (event) => {
+        const listId = parseInt(event.target.parentElement.parentElement.id.split('-')[1]);
         doneCheckboxEl.disabled = true
-        onDoneClick(id)
+        onDoneClick(id, listId)
     };
     doneCheckboxEl.checked = done;
 

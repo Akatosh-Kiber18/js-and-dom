@@ -12,45 +12,24 @@
 <div id="loader"></div>
 <div id="content" class="card-container">
     <div class="sidebar">
-        <h3>Onboarding tool</h3>
-        <p>Software Planet Group</p>
+        <h3>Add new list</h3>
+        <form>
+            <input type="text" id="create-list">
+            <label for="create-list" id="create-list-label">*</label>
+            <button id="create-list-btn" type="submit">Add</button>
+        </form>
+        <span class="hide-show-task">
+               <input type="checkbox" class="hide-task" id="hide-task" name="hide-checkbox" value="yes">
+               <label for="hide-task" id="hide-show">Show completed tasks</label>
+            </span>
     </div>
 
-    <div class="main-bar">
-        <div class="card">
-            <h1 class="card-name">
-                Card
-            </h1>
-            <p class="card-description">
-                card description
-            </p>
-        </div>
-        <div class="list-name">
-            <h2>
-                List
-            </h2>
-            <div>
+    <div class="main-bar" id="main-bar">
 
-                <form class="create-task">
-                    <input type="text" name="task name" id="create-task-name" placeholder="Task name">
-                    <label class="task-name-label" for="create-task-name">Enter task name</label>
-                    <input type="text" name="description" id="create-description" placeholder="Description">
-                    <input type="date" name="dueDate" id="create-dueDate">
-                    <button id="add-task-btn" type="submit">Add</button>
-                </form>
-
-                <div class="hide-show-task">
-                    <input type="checkbox" class="hide-task" id="hide-task" name="hide-checkbox" value="yes">
-                    <label for="hide-task" id="hide-show">Hide completed tasks</label>
-                </div>
-
-            </div>
-        </div>
-        <div class="tasks" id="tasks">
-
-        </div>
     </div>
 </div>
-<script src="./scripts.js"></script>
+</div>
+</div>
+<script type="module" src="./scripts.js"></script>
 </body>
 </html>
