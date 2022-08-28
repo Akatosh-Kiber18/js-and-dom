@@ -69,7 +69,7 @@ function onListMenuBtnClick(listId) {
     const formContainerEl = document.getElementById(`list-menu-${listId}`);
     const btnEl = document.getElementById(`list-menu-button-${listId}`);
     if (formContainerEl.style.display === "none") {
-        formContainerEl.style.display = "block";
+        formContainerEl.style.display = "flex";
         btnEl.innerText = "Hide menu";
     } else {
         formContainerEl.style.display = "none";
@@ -126,9 +126,11 @@ function updateListMenuEl(listId) {
     formEl.append(descriptionInputEl);
     formEl.append(dueDateInputEl);
     formEl.append(addTaskBtnEl);
-    formEl.append(deleteListBtnEl);
 
     listMenu.append(formEl);
+    listMenu.append(deleteListBtnEl);
+
+    listMenu.style.flexDirection = 'column';
 
     return listMenu;
 }
@@ -146,6 +148,10 @@ function createTask(name, description, dueDate, listId) {
 const mainBar = document.getElementById('main-bar');
 
 function updatePage(state) {
+    if (state.lists.length === 0) {
+        mainBar.innerText = "[ADD NEW LISTS]"
+        return
+    }
     mainBar.innerHTML = "";
     state.lists.forEach(l => mainBar.prepend(createListBlock(l)))
 }
