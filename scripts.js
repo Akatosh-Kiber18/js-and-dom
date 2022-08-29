@@ -34,6 +34,7 @@ getLists()
         updatePage(state)
     });
 
+
 const listNameEl = document.getElementById('create-list');
 const listNameLabelEl = document.getElementById('create-list-label');
 const createListBtnEl = document.getElementById('create-list-btn');
@@ -52,6 +53,7 @@ createListBtnEl.onclick = (e) => {
             showSpinner(true);
         })
         .then(lists => {
+            listNameEl.value = "";
             state.lists = lists
             updatePage(state)
         })
@@ -172,14 +174,33 @@ function onDeleteListBtnClick(listId) {
         }, _ => showSpinner(false))
 }
 
-function createTask(name, description, dueDate, listId) {
-    return {
-        name: name,
-        done: false,
-        description: description || null,
-        listId: listId || 5,
-        dueDate: dueDate || null,
-    }
+
+function createTaskBlock(task) {
+
+    const taskDetailsEl = document.createElement("div");
+    taskDetailsEl.id = `task-${task.id}`
+
+    let taskDueDateEl = document.createElement("h4");
+    taskDetailsEl.append(updateTaskDueDateEl(taskDueDateEl, task.dueDate))
+
+    let doneCheckboxEl = document.createElement("input");
+    taskDetailsEl.append(updateTaskDoneCheckboxEl(doneCheckboxEl, task.done, task.id));
+
+    let taskNameEl = document.createElement("label");
+    taskDetailsEl.append(updateTaskNameEl(taskNameEl, task.name, task.done));
+
+    let taskDescriptionEl = document.createElement("p");
+    taskDetailsEl.append(updateTaskDescriptionEl(taskDescriptionEl, task.description));
+
+    let deleteBtnEl = document.createElement("button");
+    taskDetailsEl.append(updateDeleteBtnEl(deleteBtnEl, task.id));
+
+    let taskStripEl = document.createElement("div");
+    taskDetailsEl.prepend(updateTaskStripEl(taskStripEl, taskDueDateEl, task.done, task.dueDate));
+
+    taskDetailsEl.className = !state.showCompletedTasks && task.done ? "done" : "task-details";
+
+    return taskDetailsEl;
 }
 
 function onAddTaskBtnClick(listId) {
@@ -257,32 +278,14 @@ function onDeleteBtnClick(taskId) {
         })
 }
 
-function createTaskBlock(task) {
-
-    const taskDetailsEl = document.createElement("div");
-    taskDetailsEl.id = `task-${task.id}`
-
-    let taskDueDateEl = document.createElement("h4");
-    taskDetailsEl.append(updateTaskDueDateEl(taskDueDateEl, task.dueDate))
-
-    let doneCheckboxEl = document.createElement("input");
-    taskDetailsEl.append(updateTaskDoneCheckboxEl(doneCheckboxEl, task.done, task.id));
-
-    let taskNameEl = document.createElement("label");
-    taskDetailsEl.append(updateTaskNameEl(taskNameEl, task.name, task.done));
-
-    let taskDescriptionEl = document.createElement("p");
-    taskDetailsEl.append(updateTaskDescriptionEl(taskDescriptionEl, task.description));
-
-    let deleteBtnEl = document.createElement("button");
-    taskDetailsEl.append(updateDeleteBtnEl(deleteBtnEl, task.id));
-
-    let taskStripEl = document.createElement("div");
-    taskDetailsEl.prepend(updateTaskStripEl(taskStripEl, taskDueDateEl, task.done, task.dueDate));
-
-    taskDetailsEl.className = !state.showCompletedTasks && task.done ? "done" : "task-details";
-
-    return taskDetailsEl;
+function createTask(name, description, dueDate, listId) {
+    return {
+        name: name,
+        done: false,
+        description: description || null,
+        listId: listId,
+        dueDate: dueDate || null,
+    }
 }
 
 function updateTaskDueDateEl(taskDueDateEl, dueDate) {
@@ -361,9 +364,9 @@ function showSpinner(status) {
     const spinner = document.getElementById('loader');
     if (!status) {
         spinner.style.display = "none";
-        mainBar.style.filter = "none";
+        //mainBar.style.filter = "none";
     } else {
         spinner.style.display = "block";
-        mainBar.style.filter = "blur(3px)";
+        //mainBar.style.filter = "blur(3px)";
     }
 }
