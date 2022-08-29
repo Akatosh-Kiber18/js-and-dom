@@ -6,6 +6,22 @@ let state = {
     lists: []
 };
 
+const currentDate = new Date();
+currentDate.setHours(0);
+currentDate.setMinutes(0);
+currentDate.setSeconds(0);
+
+const mainBar = document.getElementById('main-bar');
+
+function updatePage(state) {
+    if (state.lists.length === 0) {
+        mainBar.innerText = "[NO LISTS]"
+        return
+    }
+    mainBar.innerHTML = "";
+    state.lists.forEach(l => mainBar.prepend(createListBlock(l)))
+}
+
 const showEl = document.getElementById('hide-task');
 showEl.onclick = () => {
     state.showCompletedTasks = showEl.checked;
@@ -21,19 +37,25 @@ getLists()
 const listNameEl = document.getElementById('create-list');
 const listNameLabelEl = document.getElementById('create-list-label');
 const createListBtnEl = document.getElementById('create-list-btn');
-createListBtnEl.onclick = () => {
-    if (!listNameEl.value) {
+createListBtnEl.onclick = (e) => {
+    e.preventDefault();
+    showSpinner(true);
+    if (listNameEl.value.trim() === "") {
         listNameLabelEl.className = 'require';
         listNameLabelEl.style.display = 'flex'
         listNameEl.className = 'require';
+        showSpinner(false);
         return
     }
-    addLists({name: listNameEl.value})
-        .then(getLists())
+    addLists({name: listNameEl.value.trim()})
+        .then(_ => getLists(), _ => {
+            showSpinner(true);
+        })
         .then(lists => {
             state.lists = lists
             updatePage(state)
-        });
+        })
+        .then(_ => showSpinner(false));
 }
 
 function createListBlock(list) {
@@ -60,7 +82,11 @@ function createListBlock(list) {
     listMenuContainerEl.append(updateListMenuEl(list.id))
     listBlockEl.append(listMenuContainerEl);
 
-    list.tasks.forEach(t => listBlockEl.append(createTaskBlock(t)));
+    if (list.tasks.length > 0) {
+        list.tasks.forEach(t => listBlockEl.append(createTaskBlock(t)));
+    } else  {
+        listBlockEl.append("[NO TASKS]");
+    }
 
     return listBlockEl;
 }
@@ -135,6 +161,17 @@ function updateListMenuEl(listId) {
     return listMenu;
 }
 
+function onDeleteListBtnClick(listId) {
+    showSpinner(true);
+    deleteLists(listId)
+        .then(_ => getLists())
+        .then(lists => {
+            state.lists = lists;
+            updatePage(state);
+            showSpinner(false);
+        }, _ => showSpinner(false))
+}
+
 function createTask(name, description, dueDate, listId) {
     return {
         name: name,
@@ -145,27 +182,8 @@ function createTask(name, description, dueDate, listId) {
     }
 }
 
-const mainBar = document.getElementById('main-bar');
-
-function updatePage(state) {
-    if (state.lists.length === 0) {
-        mainBar.innerText = "[ADD NEW LISTS]"
-        return
-    }
-    mainBar.innerHTML = "";
-    state.lists.forEach(l => mainBar.prepend(createListBlock(l)))
-}
-
-function onDeleteListBtnClick(listId) {
-    deleteLists(listId)
-        .then(_ => getLists())
-        .then(lists => {
-            state.lists = lists
-            updatePage(state)
-        });
-}
-
 function onAddTaskBtnClick(listId) {
+    showSpinner(true);
     const formContainerEl = document.getElementById(`list-menu-${listId}`);
     const formEl = formContainerEl.getElementsByTagName('form')[0];
 
@@ -174,41 +192,37 @@ function onAddTaskBtnClick(listId) {
     const taskDescriptionEl = document.getElementById(`create-description-${listId}`);
     const taskDueDateEl = document.getElementById(`create-dueDate-${listId}`);
 
-    if (!taskNameEl.value) {
+    if (taskNameEl.value.trim() === "") {
         taskNameEl.className = "require";
         taskNameLabelEl.className = "require";
-        return
+        showSpinner(false)
+    } else {
+        const task = createTask(taskNameEl.value.trim(), taskDescriptionEl.value.trim(), taskDueDateEl.value.trim(), listId);
+        taskNameEl.className = "";
+        taskNameLabelEl.className = "task-name-label";
+
+        allowCreateTaskFormEdition(formEl, false, listId);
+        addTasks(task)
+            .then(_ => getLists())
+            .then(lists => {
+                state.lists = lists
+                updatePage(state)
+            })
+            .then(_ => {
+                taskNameEl.value = "";
+                taskDescriptionEl.value = "";
+                taskDueDateEl.value = "";
+
+                allowCreateTaskFormEdition(formEl, true, listId);
+            }, _ => {
+                allowCreateTaskFormEdition(formEl, true, listId)
+            })
+            .then(_ => showSpinner(false))
     }
-
-    const task = createTask(taskNameEl.value, taskDescriptionEl.value, taskDueDateEl.value, listId);
-
-    taskNameEl.className = "";
-    taskNameLabelEl.className = "task-name-label";
-
-    allowCreateTaskFormEdition(formEl, false);
-    addTasks(task)
-        .then(_ => getLists())
-        .then(lists => {
-            state.lists = lists
-            updatePage(state)
-        })
-        .then(_ => {
-            taskNameEl.value = "";
-            taskDescriptionEl.value = "";
-            taskDueDateEl.value = "";
-
-            allowCreateTaskFormEdition(formEl, true);
-        }, _ => {
-            allowCreateTaskFormEdition(formEl, true)
-        });
 }
 
-const currentDate = new Date();
-currentDate.setHours(0);
-currentDate.setMinutes(0);
-currentDate.setSeconds(0);
-
 function onDoneClick(taskId, listId) {
+    showSpinner(true);
     let list = state.lists.find(l => l.id === listId);
     let task = list.tasks.find(t => t.id === taskId);
     task.done = !task.done;
@@ -220,20 +234,27 @@ function onDoneClick(taskId, listId) {
             const newTask = createTaskBlock(task);
 
             taskListEl.replaceChild(newTask, oldTask);
+            showSpinner(false)
+        }, _ => {
+            showSpinner(false);
         })
 }
 
 function onDeleteBtnClick(taskId) {
+    showSpinner(true);
     deleteTask(taskId)
-        .then(_ => getLists(), _ => {
-            const task = document.getElementById(`task-${taskId}`);
-            task.style.borderColor = "purple";
-            Array.from(task.getElementsByTagName("button"))[0].disabled = false;
-        })
+        .then(_ => getLists())
         .then(lists => {
             state.lists = lists
             updatePage(state)
-        });
+            showSpinner(false);
+        }, _ => {
+            const task = document.getElementById(`task-${taskId}`);
+            task.style.borderColor = "purple";
+            task.style.borderWidth = "3px";
+            Array.from(task.getElementsByTagName("button"))[0].disabled = false;
+            showSpinner(false);
+        })
 }
 
 function createTaskBlock(task) {
@@ -330,18 +351,19 @@ function updateDeleteBtnEl(deleteBtnEl, id) {
     return span;
 }
 
-function allowCreateTaskFormEdition(formEl, allowed) {
+function allowCreateTaskFormEdition(formEl, allowed, listId) {
+    const deleteListBtnEl = document.getElementById(`delete-list-btn-${listId}`)
+    deleteListBtnEl.disabled = !allowed;
     Array.from(formEl.children).forEach(child => child.disabled = !allowed);
 }
 
 function showSpinner(status) {
     const spinner = document.getElementById('loader');
-    const tasks = document.getElementById('tasks');
     if (!status) {
         spinner.style.display = "none";
-        tasks.style.filter = "none";
+        mainBar.style.filter = "none";
     } else {
         spinner.style.display = "block";
-        tasks.style.filter = "blur(3px)";
+        mainBar.style.filter = "blur(3px)";
     }
 }

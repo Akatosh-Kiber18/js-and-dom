@@ -46,6 +46,7 @@ h4 {
     box-shadow: 2px 2px 2px #E6EDF7;
     width: 23.125%;
     padding-left: 20px;
+    min-height: 1280px;
 }
 
 .sidebar p {

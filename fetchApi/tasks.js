@@ -6,6 +6,11 @@ export function addTasks(task) {
         },
         body: JSON.stringify(task)
     })
+        .catch(res => {
+        if (!res.ok) {
+            alert(Error(res.statusText))
+        }
+    })
 }
 
 export function updateTask(task) {
@@ -15,7 +20,12 @@ export function updateTask(task) {
             'Content-Type': 'application/json;charset=utf-8',
         },
         body: JSON.stringify(task)
-    });
+    })
+        .catch(res => {
+            if (!res.ok) {
+                alert(Error(res.statusText))
+            }
+        })
 }
 
 export function deleteTask(taskId) {
@@ -25,4 +35,9 @@ export function deleteTask(taskId) {
             'Content-Type': 'application/json;charset=utf-8',
         }
     })
+        .catch(res => {
+            if (!res.ok) {
+                alert(Error(res.statusText))
+            }
+        })
 }
