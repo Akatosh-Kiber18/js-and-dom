@@ -64,28 +64,14 @@ function createListBlock(list) {
     const listBlockEl = document.createElement('div');
     listBlockEl.className = "list-name";
     listBlockEl.id = `list-${list.id}`
-    const listNameEl = document.createElement('h2');
-    listNameEl.innerText = list.name;
-    listBlockEl.append(listNameEl)
 
-    const listMenuContainerEl = document.createElement('div');
-    listMenuContainerEl.id = 'menu-container';
+    listBlockEl.append(updateListNameEl(list));
 
-    const listMenuBtnEl = document.createElement('button');
-    listMenuBtnEl.id = `list-menu-button-${list.id}`;
-    listMenuBtnEl.type = "button";
-    listMenuBtnEl.innerText = "Show menu";
-    listMenuBtnEl.onclick = (event) => {
-        const listId = event.target.parentElement.parentElement.id.split('-')[1];
-        onListMenuBtnClick(listId)
-    }
+    listBlockEl.append(updateListMenuContainerEl(list));
 
-    listMenuContainerEl.append(listMenuBtnEl);
-    listMenuContainerEl.append(updateListMenuEl(list.id))
-    listBlockEl.append(listMenuContainerEl);
-
-    if (list.tasks.length > 0) {
-        list.tasks.forEach(t => listBlockEl.append(createTaskBlock(t)));
+    const tasks = list.tasks;
+    if (tasks.length > 0) {
+        tasks.forEach(t => listBlockEl.append(createTaskBlock(t)));
     } else  {
         listBlockEl.append("[NO TASKS]");
     }
@@ -105,7 +91,8 @@ function onListMenuBtnClick(listId) {
     }
 }
 
-function updateListMenuEl(listId) {
+function updateListMenuEl(list) {
+    const listId = list.id;
     const listMenu = document.createElement('div');
     listMenu.id = `list-menu-${listId}`;
     listMenu.style.display = "none";
@@ -174,29 +161,53 @@ function onDeleteListBtnClick(listId) {
         }, _ => showSpinner(false))
 }
 
+function updateListNameEl(list) {
+    const listNameEl = document.createElement('h2');
+    listNameEl.innerText = list.name;
+
+    return listNameEl
+}
+
+function updateListMenuContainerEl(list) {
+    const listMenuContainerEl = document.createElement('div');
+    listMenuContainerEl.id = 'menu-container';
+
+    listMenuContainerEl.append(updateListMenuBtnEl(list));
+    listMenuContainerEl.append(updateListMenuEl(list))
+
+    return listMenuContainerEl;
+}
+
+function updateListMenuBtnEl(list) {
+    const listMenuBtnEl = document.createElement('button');
+    listMenuBtnEl.id = `list-menu-button-${list.id}`;
+    listMenuBtnEl.type = "button";
+    listMenuBtnEl.innerText = "Show menu";
+    listMenuBtnEl.onclick = (event) => {
+        const listId = event.target.parentElement.parentElement.id.split('-')[1];
+        onListMenuBtnClick(listId)
+    }
+
+    return listMenuBtnEl;
+}
+
 
 function createTaskBlock(task) {
 
     const taskDetailsEl = document.createElement("div");
     taskDetailsEl.id = `task-${task.id}`
 
-    let taskDueDateEl = document.createElement("h4");
-    taskDetailsEl.append(updateTaskDueDateEl(taskDueDateEl, task.dueDate))
+    taskDetailsEl.append(updateTaskStripEl(task));
 
-    let doneCheckboxEl = document.createElement("input");
-    taskDetailsEl.append(updateTaskDoneCheckboxEl(doneCheckboxEl, task.done, task.id));
+    taskDetailsEl.append(updateTaskDueDateEl(task))
 
-    let taskNameEl = document.createElement("label");
-    taskDetailsEl.append(updateTaskNameEl(taskNameEl, task.name, task.done));
+    taskDetailsEl.append(updateTaskDoneCheckboxEl(task));
 
-    let taskDescriptionEl = document.createElement("p");
-    taskDetailsEl.append(updateTaskDescriptionEl(taskDescriptionEl, task.description));
+    taskDetailsEl.append(updateTaskNameEl(task));
 
-    let deleteBtnEl = document.createElement("button");
-    taskDetailsEl.append(updateDeleteBtnEl(deleteBtnEl, task.id));
+    taskDetailsEl.append(updateTaskDescriptionEl(task));
 
-    let taskStripEl = document.createElement("div");
-    taskDetailsEl.prepend(updateTaskStripEl(taskStripEl, taskDueDateEl, task.done, task.dueDate));
+    taskDetailsEl.append(updateDeleteBtnEl(task));
 
     taskDetailsEl.className = !state.showCompletedTasks && task.done ? "done" : "task-details";
 
@@ -288,7 +299,9 @@ function createTask(name, description, dueDate, listId) {
     }
 }
 
-function updateTaskDueDateEl(taskDueDateEl, dueDate) {
+function updateTaskDueDateEl(task) {
+    let taskDueDateEl = document.createElement("h4");
+    let dueDate = task.dueDate;
     const taskDate = new Date(dueDate).getTime();
 
     if (dueDate !== null) {
@@ -296,43 +309,53 @@ function updateTaskDueDateEl(taskDueDateEl, dueDate) {
     }
     taskDueDateEl.innerText = dueDate ? new Date(dueDate).toLocaleDateString() : "[no dueDate]";
 
+    if (task.done) {
+        taskDueDateEl.className = "";
+    }else if (taskDate !== null && taskDate < currentDate.getTime() && !task.done) {
+        taskDueDateEl.className = "task-details-dueDate";
+    }
+
     return taskDueDateEl;
 }
 
-function updateTaskDoneCheckboxEl(doneCheckboxEl, done, id) {
+function updateTaskDoneCheckboxEl(task) {
+    let doneCheckboxEl = document.createElement("input");
     doneCheckboxEl.type = "checkbox";
-    doneCheckboxEl.className = done ? "checkbox" : "";
+    doneCheckboxEl.className = task.done ? "checkbox" : "";
     doneCheckboxEl.onclick = (event) => {
         const listId = parseInt(event.target.parentElement.parentElement.id.split('-')[1]);
         doneCheckboxEl.disabled = true
-        onDoneClick(id, listId)
+        onDoneClick(task.id, listId)
     };
-    doneCheckboxEl.checked = done;
+    doneCheckboxEl.checked = task.done;
 
     return doneCheckboxEl;
 }
 
-function updateTaskNameEl(taskNameEl, name, done) {
-    taskNameEl.innerText = name;
-    taskNameEl.className = done ? "task-details-done" : "";
+function updateTaskNameEl(task) {
+    let taskNameEl = document.createElement("label");
+    taskNameEl.innerText = task.name;
+    taskNameEl.className = task.done ? "task-details-done" : "";
 
     return taskNameEl;
 }
 
-function updateTaskDescriptionEl(taskDescriptionEl, description) {
+function updateTaskDescriptionEl(task) {
+    let taskDescriptionEl = document.createElement("p");
+    const description = task.description;
     taskDescriptionEl.innerText = description ? description : "[no description]";
 
     return taskDescriptionEl;
 }
 
-function updateTaskStripEl(taskStripEl, taskDueDateEl, done, dueDate) {
-    const taskDate = new Date(dueDate).getTime() || null;
+function updateTaskStripEl(task) {
+    let taskStripEl = document.createElement("div");
+    let done = task.done;
+    const taskDate = new Date(task.dueDate).getTime() || null;
 
     if (done) {
         taskStripEl.className = "task-details-strip-green";
-        taskDueDateEl.className = "";
     } else if (taskDate !== null && taskDate < currentDate.getTime() && !done) {
-        taskDueDateEl.className = "task-details-dueDate";
         taskStripEl.className = "task-details-strip-red";
     } else {
         taskStripEl.className = "task-details-strip-grey";
@@ -341,11 +364,12 @@ function updateTaskStripEl(taskStripEl, taskDueDateEl, done, dueDate) {
     return taskStripEl;
 }
 
-function updateDeleteBtnEl(deleteBtnEl, id) {
+function updateDeleteBtnEl(task) {
+    let deleteBtnEl = document.createElement("button");
     deleteBtnEl.innerText = "Delete";
     deleteBtnEl.onclick = () => {
         deleteBtnEl.disabled = true;
-        onDeleteBtnClick(id);
+        onDeleteBtnClick(task.id);
     }
     const span = document.createElement("span");
     span.className = "delete-button";
